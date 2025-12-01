@@ -13,10 +13,10 @@ import EnrollmentsRoutes from "./Kambaz/Enrollments/routes.js";
 
 const app = express();
 
-// ======================================================
-// CORS
-// ======================================================
+// ================== CORS ==================
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+
+console.log("Using CLIENT_URL:", CLIENT_URL);
 
 app.use(
   cors({
@@ -25,13 +25,11 @@ app.use(
   })
 );
 
-// ======================================================
-// SESSION
-// ======================================================
+// ================== SESSION ==================
 const isProd = process.env.SERVER_ENV === "production";
 
 if (isProd) {
-  // Needed so secure cookies work correctly behind Render's proxy
+  // Needed so 'secure' cookies work behind Render's proxy
   app.set("trust proxy", 1);
 }
 
@@ -43,14 +41,12 @@ const sessionOptions = {
 };
 
 if (isProd) {
-  // Cross-site cookies: Vercel (frontend) ↔ Render (backend)
   sessionOptions.cookie = {
     sameSite: "none",
     secure: true,
-    // IMPORTANT: don't set `domain` – let browser default
+    // IMPORTANT: no domain here – let the browser default
   };
 } else {
-  // Local dev: http, same site
   sessionOptions.cookie = {
     sameSite: "lax",
     secure: false,
@@ -59,9 +55,7 @@ if (isProd) {
 
 app.use(session(sessionOptions));
 
-// ======================================================
-// JSON + ROUTES
-// ======================================================
+// ================== JSON + ROUTES ==================
 app.use(express.json());
 
 UserRoutes(app, db);
@@ -72,4 +66,8 @@ EnrollmentsRoutes(app, db);
 Lab5(app);
 Hello(app);
 
+// ================== START SERVER ==================
 const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
