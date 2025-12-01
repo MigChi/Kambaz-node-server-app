@@ -16,20 +16,39 @@ const app = express();
 // ================== CORS ==================
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 
-console.log("Using CLIENT_URL:", CLIENT_URL);
+console.log("CLIENT_URL:", CLIENT_URL);
+
+const isLocalClient = CLIENT_URL.includes("localhost");
+
+// Allow both localhost (for dev) and your deployed Vercel URL.
+const allowedOrigins = [
+  CLIENT_URL,
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
 
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: (origin, callback) => {
+      // allow REST tools / curl / server-to-server (no origin)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.warn("Blocked CORS origin:", origin);
+      return callback(null, false);
+    },
     credentials: true,
   })
 );
 
 // ================== SESSION ==================
-const isProd = process.env.SERVER_ENV === "production";
+const isProd = !isLocalClient;
 
+// Needed so https cookies work correctly behind Render's proxy
 if (isProd) {
-  // Needed so 'secure' cookies work behind Render's proxy
   app.set("trust proxy", 1);
 }
 
@@ -41,12 +60,13 @@ const sessionOptions = {
 };
 
 if (isProd) {
+  // Cross-site cookie for Vercel ↔ Render
   sessionOptions.cookie = {
     sameSite: "none",
     secure: true,
-    // IMPORTANT: no domain here – let the browser default
   };
 } else {
+  // Local dev: plain http://localhost:3000 ↔ http://localhost:4000
   sessionOptions.cookie = {
     sameSite: "lax",
     secure: false,
