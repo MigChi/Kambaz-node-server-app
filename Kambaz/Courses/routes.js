@@ -26,16 +26,29 @@ export default function CourseRoutes(app, db) {
   };
 
   const createCourse = async (req, res) => {
+    // Try to use session user if available, but don't block if it's missing
     const currentUser = req.session["currentUser"];
-    if (!currentUser) {
-      res.sendStatus(401);
-      return;
-    }
 
-    const newCourse = await dao.createCourse(req.body);
-    await enrollmentsDao.enrollUserInCourse(currentUser._id, newCourse._id);
-    res.json(newCourse);
+    try {
+      const newCourse = await dao.createCourse(req.body);
+
+      // If we DO have a session user, we can still auto-enroll them (nice for local dev)
+      if (currentUser && currentUser._id) {
+        try {
+          await enrollmentsDao.enrollUserInCourse(currentUser._id, newCourse._id);
+        } catch (e) {
+          console.error("Auto-enroll in createCourse failed:", e);
+          // don't fail the whole request
+        }
+      }
+
+      res.json(newCourse);
+    } catch (e) {
+      console.error("Error in createCourse:", e);
+      res.sendStatus(500);
+    }
   };
+
 
   const deleteCourse = async (req, res) => {
     const { courseId } = req.params;
