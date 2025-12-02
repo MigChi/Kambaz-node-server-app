@@ -3,19 +3,24 @@ import EnrollmentsDao from "./dao.js";
 export default function EnrollmentsRoutes(app, db) {
   const dao = EnrollmentsDao(db);
 
-  app.get("/api/enrollments", (req, res) => {
-    res.json(dao.findAllEnrollments());
+  // Optional – useful for debugging
+  app.get("/api/enrollments", async (req, res) => {
+    const enrollments = await dao.findAllEnrollments();
+    res.json(enrollments);
   });
 
-  app.post("/api/users/:userId/courses/:courseId/enroll", (req, res) => {
+  app.post("/api/users/:userId/courses/:courseId/enroll", async (req, res) => {
     const { userId, courseId } = req.params;
-    const enrollment = dao.enrollUserInCourse(userId, courseId);
+    const enrollment = await dao.enrollUserInCourse(userId, courseId);
     res.json(enrollment);
   });
 
-  app.delete("/api/users/:userId/courses/:courseId/enroll", (req, res) => {
-    const { userId, courseId } = req.params;
-    const success = dao.unenrollUserFromCourse(userId, courseId);
-    res.json({ success });
-  });
+  app.delete(
+    "/api/users/:userId/courses/:courseId/enroll",
+    async (req, res) => {
+      const { userId, courseId } = req.params;
+      const result = await dao.unenrollUserFromCourse(userId, courseId);
+      res.json(result);
+    }
+  );
 }

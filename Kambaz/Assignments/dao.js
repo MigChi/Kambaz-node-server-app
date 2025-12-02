@@ -1,33 +1,32 @@
+import model from "./model.js";
 import { v4 as uuidv4 } from "uuid";
 
-export default function AssignmentsDao(db) {
-  function findAssignmentsForCourse(courseId) {
-    return db.assignments.filter((a) => a.course === courseId);
+export default function AssignmentsDao() {
+  async function findAssignmentsForCourse(courseId) {
+    return model.find({ course: courseId });
   }
 
-  function findAssignmentById(assignmentId) {
-    return db.assignments.find((a) => a._id === assignmentId);
+  async function findAssignmentById(assignmentId) {
+    return model.findById(assignmentId);
   }
 
-  function createAssignment(courseId, assignment) {
+  async function createAssignment(courseId, assignment) {
     const newAssignment = {
       ...assignment,
       _id: uuidv4(),
       course: courseId,
     };
-    db.assignments = [...db.assignments, newAssignment];
-    return newAssignment;
+    return model.create(newAssignment);
   }
 
-  function updateAssignment(assignmentId, updates) {
-    const assignment = db.assignments.find((a) => a._id === assignmentId);
-    Object.assign(assignment, updates);
-    return assignment;
+  async function updateAssignment(assignmentId, updates) {
+    await model.updateOne({ _id: assignmentId }, { $set: updates });
+    // return fresh doc so UI always has latest
+    return model.findById(assignmentId);
   }
 
-  function deleteAssignment(assignmentId) {
-    db.assignments = db.assignments.filter((a) => a._id !== assignmentId);
-    return { status: "ok" };
+  async function deleteAssignment(assignmentId) {
+    return model.deleteOne({ _id: assignmentId });
   }
 
   return {

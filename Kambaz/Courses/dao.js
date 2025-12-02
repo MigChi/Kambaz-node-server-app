@@ -1,32 +1,34 @@
+// Kambaz/Courses/dao.js
+import model from "./model.js";
 import { v4 as uuidv4 } from "uuid";
-export default function CoursesDao(db) {
-  function findCoursesForEnrolledUser(userId) {
-    const { courses, enrollments } = db;
-    const enrolledCourses = courses.filter((course) =>
-        enrollments.some((enrollment) => enrollment.user === userId && enrollment.course === course._id));
-    return enrolledCourses;
-  }  
+
+export default function CoursesDao(_db) {
+  function findAllCourses() {
+    // Only send name + description (and _id by default)
+    return model.find({}, { name: 1, description: 1 });
+  }
+
+  // NOTE: This is no longer used; the route now uses enrollmentsDao.findCoursesForUser()
+  // so we don't define findCoursesForEnrolledUser anymore.
+
   function createCourse(course) {
     const newCourse = { ...course, _id: uuidv4() };
-    db.courses = [...db.courses, newCourse];
-    return newCourse;
+    return model.create(newCourse);
   }
-  function findAllCourses() {
-    return db.courses;
-  }
+
   function deleteCourse(courseId) {
-    const { courses, enrollments } = db;
-    db.courses = courses.filter((course) => course._id !== courseId);
-    db.enrollments = enrollments.filter(
-      (enrollment) => enrollment.course !== courseId
-  )}
-  function updateCourse(courseId, courseUpdates) {
-    const { courses } = db;
-    const course = courses.find((course) => course._id === courseId);
-    Object.assign(course, courseUpdates);
-    return course;
+    // All enrollment cleanup is now done in EnrollmentsDao
+    return model.deleteOne({ _id: courseId });
   }
 
-  return { findAllCourses, findCoursesForEnrolledUser, createCourse, deleteCourse, updateCourse };
-}
+  function updateCourse(courseId, courseUpdates) {
+    return model.updateOne({ _id: courseId }, { $set: courseUpdates });
+  }
 
+  return {
+    findAllCourses,
+    createCourse,
+    deleteCourse,
+    updateCourse,
+  };
+}
